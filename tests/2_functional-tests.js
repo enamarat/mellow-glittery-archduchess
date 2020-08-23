@@ -39,8 +39,9 @@ suite('Functional Tests', () => {
     // Pressing the "Clear" button clears the sudoku 
     // grid and the text area
     test('Function clearInput()', done => {
-
-      // done();
+      const textArea = document.getElementById('text-input');
+      assert.equal(textArea.value, null);
+      done();
     });
     
     // Pressing the "Solve" button solves the puzzle and
