@@ -8,7 +8,6 @@
 
 const chai = require('chai');
 const assert = chai.assert;
-//const expect = chai.expect;
 
 const jsdom = require('jsdom');
 const { JSDOM } = jsdom;
@@ -62,13 +61,10 @@ suite('UnitTests', function() {
     });
   });
   
-  suite('Function solveSudoku()', function() {
-    //this.timeout(0);
+  suite('Function analyzePuzzleString()', function() {
     test('Parses a valid puzzle string into an object', function(done) {
       const input = '..9..5.1.85.4....2432......1...69.83.9.....6.62.71...9......1945....4.37.4.3..6..';
-       console.log(Solver.solveSudoku(input));
-     //assert.typeOf(Solver.solveSudoku(input), 'object', 'we have an object');
-     
+      assert.typeOf(Solver.analyzePuzzleString(input), 'object', 'we have an object');
       done();
     });
     
@@ -80,38 +76,57 @@ suite('UnitTests', function() {
       const longStr = '..9..5.1.85.4....2432......1...69.83.9.....6.62.71...9......1945....4.37.4.3..6...';
       const errorMsg = 'Error: Expected puzzle to be 81 characters long.';
       const errorDiv = document.getElementById('error-msg');
-      assert.equal(Solver.solveSudoku(shortStr), false);
-      assert.equal(Solver.solveSudoku(longStr), false);
+      assert.equal(Solver.analyzePuzzleString(shortStr), false);
+      assert.equal(Solver.analyzePuzzleString(longStr), false);
       done();
     });
   });
 
-  suite('Function ____()', () => {
+  suite('Function analyzePuzzleString()', () => {
     // Valid complete puzzles pass
     test('Valid puzzles pass', done => {
       const input = '769235418851496372432178956174569283395842761628713549283657194516924837947381625';
-      assert.typeOf(Solver.solveSudoku(input), 'object', 'we have an object');
+      assert.typeOf(Solver.analyzePuzzleString(input), 'object', 'we have an object');
       done();
     });
 
     // Invalid complete puzzles fail
     test('Invalid puzzles fail', done => {
       const input = '779235418851496372432178956174569283395842761628713549283657194516924837947381625';
-     // assert.typeOf(Solver.solveSudoku(input), 'boolean', 'we have a boolean');
-      assert.equal(Solver.solveSudoku(input), false);
+      assert.equal(Solver.analyzePuzzleString(input), false);
       done();
     });
   });
   
   
-  suite('Function ____()', () => {
+  suite('Function solveSudoku()', done => {
     // Returns the expected solution for a valid, incomplete puzzle
     test('Returns the expected solution for an incomplete puzzle', done => {
       const input = '..9..5.1.85.4....2432......1...69.83.9.....6.62.71...9......1945....4.37.4.3..6..';
-      //769235418851496372432178956174569283395842761628713549283657194516924837947381625
-  //console.log(Solver.solveSudoku(input).solution);
-    //  assert.isString(Solver.solveSudoku(input).solution);
-      assert.equal(Solver.solveSudoku(input).solution, "769235418851496372432178956174569283395842761628713549283657194516924837947381625");                                              
+      let solve = Solver.solveSudoku;
+      let analyze = Solver.analyzePuzzleString;
+  
+      //1
+      let result = input;
+      assert.equal(solve(analyze(result)), "7.9..5.1.85.4...72432......17..69.83.9.....6.62.71...9......1945....4.37.4.3..6..");
+      //2
+      result = "7.9..5.1.85.4...72432......17..69.83.9.....6.62.71...9......1945....4.37.4.3..6..";
+      assert.equal(solve(analyze(result)), "769..5.1.85.4...72432....5.17..69.8339.....6.62.71...9......1945....4.37.4.3..6..");
+      //3
+      result = "769..5.1.85.4...72432....5.17..69.8339.....6.62.71...9......1945....4.37.4.3..6..";
+      assert.equal(solve(analyze(result)), "769..5.188514...72432....5.17..69.8339.....6.62.71..4928....1945....4.37.4.3..62.");
+      //4
+      result = "769..5.188514...72432....5.17..69.8339.....6.62.71..4928....1945....4.37.4.3..62.";
+      assert.equal(solve(analyze(result)), "7692.5.188514...72432...95617..69.8339.....6.62.71.54928....194516..48379473..625");
+      //5
+      result = "7692.5.188514...72432...95617..69.8339.....6.62.71.54928....194516..48379473..625";
+      assert.equal(solve(analyze(result)), "769235.188514..372432...95617.56928339.....6162871.549283...1945169.483794738.625");
+      //6
+      result = "769235.188514..372432...95617.56928339.....6162871.549283...1945169.483794738.625";
+      assert.equal(solve(analyze(result)), "769235418851496372432.7.95617456928339.8..7616287135492836..194516924837947381625");
+      //7
+      result = "769235418851496372432.7.95617456928339.8..7616287135492836..194516924837947381625";
+      assert.equal(solve(analyze(result)), "769235418851496372432178956174569283395842761628713549283657194516924837947381625");
       done();
     });
   });

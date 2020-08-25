@@ -23,15 +23,17 @@ suite('Functional Tests', () => {
     // Entering a valid number in the text area populates 
     // the correct cell in the sudoku grid with that number
     test('Valid number in text area populates correct cell in grid', done => {
-
-      // done();
+      assert.equal(Solver.showNumbersInTheGrid("9"), true);
+      assert.equal(Solver.compareCellsGridAndTextArea(), true);
+      done();
     });
 
     // Entering a valid number in the grid automatically updates
     // the puzzle string in the text area
     test('Valid number in grid updates the puzzle string in the text area', done => {
-
-      // done();
+        const textArea = document.getElementById('text-input');
+        assert.equal(Solver.changeNumbersInTheTextArea(), textArea.value);
+        done();
     });
   });
   
@@ -39,16 +41,20 @@ suite('Functional Tests', () => {
     // Pressing the "Clear" button clears the sudoku 
     // grid and the text area
     test('Function clearInput()', done => {
-      const textArea = document.getElementById('text-input');
-      assert.equal(textArea.value, null);
+      assert.equal(Solver.clearTextArea(), "");
       done();
     });
     
     // Pressing the "Solve" button solves the puzzle and
     // fills in the grid with the solution
     test('Function showSolution(solve(input))', done => {
-
-      // done();
+     const textArea = document.getElementById('text-input');
+      let solve = Solver.solveSudoku;
+      let analyze = Solver.analyzePuzzleString;
+      let result = "769235418851496372432.7.95617456928339.8..7616287135492836..194516924837947381625";
+      assert.equal(solve(analyze(result)), "769235418851496372432178956174569283395842761628713549283657194516924837947381625");
+      assert.equal(Solver.compareCellsGridAndTextArea(), true);
+     done();
     });
   });
 });

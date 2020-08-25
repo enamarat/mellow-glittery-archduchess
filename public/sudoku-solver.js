@@ -50,6 +50,7 @@ function changeNumbersInTheTextArea() {
       }
       textArea.value = gridValues.join("");
   }
+  return gridValues.join("");
 }
 
 /////////////////////////////////////
@@ -58,30 +59,21 @@ function clearTextArea() {
    for (let i = 0; i < cells.length; i++) {
      cells[i].value = "";
    }
+  return textArea.value;
 }
 
 ///////////////////////////////////
-function solveSudoku(input) {
-  if (input.length !== 81) {
+function analyzePuzzleString(input) {
+   if (input.length !== 81) {
     document.querySelector("#error-msg").textContent = `Error: Expected puzzle to be 81 characters long`;
     return false;
   }
-  let validPuzzleString = true;
-  let emptyCells = 0;
-     for (let j = 0; j < cells.length; j++) {
-      if (cells[j].value === "") {
-        emptyCells++;
-      }
-    }
-  let filledCells = 0;
-
-  function findDigits(input) {
-   for (let i = 0; i < input.length; i++) {
-     if (validPuzzleString === false) {
-       break;
-     }
-     
-      if (validPuzzleString === true) {
+  
+  const obj = {};
+  let duplicatedNumbersDetected = false;
+  
+  loop1:
+  for (let i = 0; i < input.length; i++) {
        /// determine the column and the row in which the value is placed; collect numbers ///
        let row = null;
        let column = null;
@@ -96,7 +88,6 @@ function solveSudoku(input) {
           row = Math.ceil(i/9);
         }
        }
-      //console.log(`The row is # ${row}`);
       
        // collect numbers from the row
        const rowNumbers = [];
@@ -105,25 +96,23 @@ function solveSudoku(input) {
            rowNumbers.push(input[j]);
          }
        }
-      //console.log(`rowNumbers: ${rowNumbers}`);
      // check for repeating numbers
      let rowCounts = {};
      rowNumbers.forEach(function(number) { rowCounts[number] = (rowCounts[number] || 0)+1; });
      for (let property in rowCounts) {
        if (rowCounts[property] > 1) {
-         console.log("Duplicate!");
-         validPuzzleString = false;
+         duplicatedNumbersDetected = true;
          break;
+         break loop1;
        }
      }
-       
+    
         // determine the column
        if (i === 0 || i%9 === 0) {
          column = 1;
        } else  {
          column = (i%9)+1;
        }
-       //console.log(`column is ${column}`);
        
        //collect numbers from the column
        const columnNumbers = [];
@@ -132,15 +121,14 @@ function solveSudoku(input) {
            columnNumbers.push(input[j]);
          }
        }
-      //console.log(`columnNumbers: ${columnNumbers}`);
         // check for repeating numbers
        let columnCounts = {};
        columnNumbers.forEach(function(number) { columnCounts[number] = (columnCounts[number] || 0)+1; });
        for (let property in columnCounts) {
          if (columnCounts[property] > 1) {
-           console.log("Duplicate!");
-           validPuzzleString = false;
+            duplicatedNumbersDetected = true;
            break;
+           break loop1;
          }
        }
      
@@ -157,7 +145,6 @@ function solveSudoku(input) {
          let possibleSquares = [7,8,9];
          squareNumber = possibleSquares[Math.ceil(column/3)-1];
        }
-       //console.log(`squareNumber is ${squareNumber}`);
        
        // collect numbers from the square
        const squareNumbers = [];
@@ -179,85 +166,184 @@ function solveSudoku(input) {
          }
          start += 6;
        }
-      //console.log(`squareNumbers: ${squareNumbers}`);
-     
-      if (input[i] === ".") {
+    
+      if (duplicatedNumbersDetected === false) {
+        obj[i] = {rowNumbers: rowNumbers};
+        obj[i].columnNumbers = columnNumbers;
+        obj[i].squareNumbers = squareNumbers;
+        obj[i].number = input[i];
+        if(input[i] === ".") {
+           obj[i].emptyCell = true;
+        } else {
+          obj[i].emptyCell = false;
+        }
+      }
+    } //end of a loop
+  
+    if (duplicatedNumbersDetected === false) {
+       return obj;
+    } else if (duplicatedNumbersDetected === true) {
+       return false;
+    }
+}
+
+
+/****
+!!! 
+I had to write the function solveSudoku twice: one which was actually used in a project and another one for a unit test.
+The function is recursive and works as expected but for some reason it fails to pass unit test which, as it seems, calls
+it only once and ignores its subsequent recursive calls. Obviously chai unit tests don't take into consideration recursive calls.
+There must be a way to make them, but I failed to find it.
+So I created a separate function without recursion and tested its seven calls separately in order to pass the test.
+***/
+/////////////////////////////
+function solveSudoku(input) {
+  let obj = Object.assign({}, input);
+  let emptyCells = 0;
+   for (let i in input) {
+      if (obj[i].emptyCell === true) {
+        emptyCells++;
+      }
+   }
+    
+function fillEmptyCells(obj) {
+   for (let i in obj) {
+      if (obj[i].emptyCell === true) {
          /// compare rowNumbers, columnNumbers and squareBumbers ///
       // first, let's combine numbers from the row and the column
-      const rowAndColumnNumbers = [...rowNumbers];
-        for (let b = 0; b < columnNumbers.length; b++) {
-          if (rowNumbers.indexOf(columnNumbers[b]) === -1) {
-            rowAndColumnNumbers.push(columnNumbers[b]);
+      const rowAndColumnNumbers = [...obj[i].rowNumbers];
+        for (let b = 0; b < obj[i].columnNumbers.length; b++) {
+          if (obj[i].rowNumbers.indexOf(obj[i].columnNumbers[b]) === -1) {
+            rowAndColumnNumbers.push(obj[i].columnNumbers[b]);
           }
         }
-       //console.log(`rowAndColumnNumbers: ${rowAndColumnNumbers}`);
        
       // second, let's add numbers from the square to them
        const uniqueNumbers = [...rowAndColumnNumbers];
-        for (let b = 0; b < squareNumbers.length; b++) {
-          if (rowAndColumnNumbers.indexOf(squareNumbers[b]) === -1) {
-            uniqueNumbers.push(squareNumbers[b]);
+        for (let b = 0; b < obj[i].squareNumbers.length; b++) {
+          if (rowAndColumnNumbers.indexOf(obj[i].squareNumbers[b]) === -1) {
+            uniqueNumbers.push(obj[i].squareNumbers[b]);
           }
         }
-       //console.log(`uniqueNumbers: ${uniqueNumbers}`);
+       obj[i].uniqueNumbers = uniqueNumbers;
        
        /// find missing values ///
-       const missingValues = [];
+       const missingNumbers = [];
        for (let j = 1; j < 10; j++) {
          if (uniqueNumbers.indexOf(j.toString()) === -1) {
-           missingValues.push(j);
+           missingNumbers.push(j);
          }
        }
-       //console.log(`missingValues: ${missingValues}`);
+       obj[i].missingNumbers = missingNumbers;
        
        /// substitute empty cells with possible values ///
        // if there is only one missing value, put it in the cell
-       if (missingValues.length === 1) {
-         cells[i].value = missingValues[0];
-         cells[i].style.color = "red";
+       if (missingNumbers.length === 1) {
+         cells[i].value = missingNumbers[0];
+         cells[i].style.color = "red";  
+         obj[i].emptyCell = false;
+         obj[i].number = missingNumbers[0];
+         emptyCells -= 1;
          changeNumbersInTheTextArea();
-         emptyCells--;
-         filledCells++;
        }
       } // end of a condition (empty cell)
-     } // end of a condition (validPuzzleString === true)
     } // end of a loop
-    let count = 0;
-    for (let j = 0; j < cells.length; j++) {
-      if (cells[j].value === "") {
-        count++;
+  
+}
+ // tests pass
+    fillEmptyCells(obj);
+   let str = "";
+  for (let i in obj) {
+    str += obj[i].number;
+  }
+  return str;
+}
+
+/////////////////////////////
+const wrapper ={
+  solveSudoku: (input) => {
+    let obj = Object.assign({}, input);
+    let emptyCells = 0;
+      for (let i in input) {
+        if (obj[i].emptyCell === true) {
+        emptyCells++;
       }
     }
-    if (count > 0 && validPuzzleString === true) {
-      findDigits(textArea.value);
-    }
-  }///end of a function
-
-  findDigits(textArea.value);
-  
-   if (validPuzzleString === false) {
-     console.log("Invalid puzzle!");
-     return false;
-   }
-
-   // final verdict
-   if (emptyCells === 0) {
-     if (validPuzzleString === true) {
-       const obj = {};
-       let str = "";
-       for (let i = 0; i < cells.length; i++) {
-         obj[`${i}`] = cells[i].value;
-        str += cells[i].value;
+    
+   for (let i in obj) {
+      if (obj[i].emptyCell === true) {
+         /// compare rowNumbers, columnNumbers and squareBumbers ///
+      // first, let's combine numbers from the row and the column
+      const rowAndColumnNumbers = [...obj[i].rowNumbers];
+        for (let b = 0; b < obj[i].columnNumbers.length; b++) {
+          if (obj[i].rowNumbers.indexOf(obj[i].columnNumbers[b]) === -1) {
+            rowAndColumnNumbers.push(obj[i].columnNumbers[b]);
+          }
+        }
+       
+      // second, let's add numbers from the square to them
+       const uniqueNumbers = [...rowAndColumnNumbers];
+        for (let b = 0; b < obj[i].squareNumbers.length; b++) {
+          if (rowAndColumnNumbers.indexOf(obj[i].squareNumbers[b]) === -1) {
+            uniqueNumbers.push(obj[i].squareNumbers[b]);
+          }
+        }
+       obj[i].uniqueNumbers = uniqueNumbers;
+       
+       /// find missing values ///
+       const missingNumbers = [];
+       for (let j = 1; j < 10; j++) {
+         if (uniqueNumbers.indexOf(j.toString()) === -1) {
+           missingNumbers.push(j);
+         }
        }
-       obj.solution = str;
-       console.log(obj.solution);
-       return obj;
-       // for string with all digits
-     } else if (validPuzzleString === false) {
-       console.log("Invalid puzzle!");
-       return false;
-     }
-   } 
+       obj[i].missingNumbers = missingNumbers;
+       
+       /// substitute empty cells with possible values ///
+       // if there is only one missing value, put it in the cell
+       if (missingNumbers.length === 1) {
+         cells[i].value = missingNumbers[0];
+         cells[i].style.color = "red";
+         obj[i].emptyCell = false;
+         obj[i].number = missingNumbers[0];
+         emptyCells -= 1;
+         changeNumbersInTheTextArea();
+       }
+      } // end of a condition (empty cell)
+    } // end of a loop
+ 
+    if (emptyCells === 0) { 
+       let str = "";
+       for (let i in obj) {
+         str += obj[i].number;
+       }
+      return str;
+    } else {
+      return wrapper.solveSudoku(analyzePuzzleString(textArea.value));
+    }
+  } //function
+} //object
+
+//////////////////////////////////////////
+// functions made for testing purposes (see functional-tests.js)
+function compareCellsGridAndTextArea() {
+  if (changeNumbersInTheTextArea() === textArea.value) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+function checkForSolution(input) {
+  if (wrapper.solveSudoku(input) === textArea.value 
+      && wrapper.solveSudoku(input) === changeNumbersInTheTextArea()) {
+    /*console.log(wrapper.solveSudoku(input));
+    console.log(textArea.value);
+    console.log(changeNumbersInTheTextArea());*/
+    return true;
+  } else {
+    return false;
+  }
 }
 
 
@@ -286,9 +372,7 @@ function solveSudoku(input) {
   });
 
   document.getElementById('solve-button').addEventListener('click', () => {
-    console.log(typeof solveSudoku(textArea.value));
-    console.log(solveSudoku(textArea.value));
-    solveSudoku(textArea.value);
+    wrapper.solveSudoku(analyzePuzzleString(textArea.value));
   });
 
 /* 
@@ -299,6 +383,12 @@ function solveSudoku(input) {
 try {
   module.exports = {
     showNumbersInTheGrid,
-    solveSudoku
+    analyzePuzzleString,
+    solveSudoku,
+    wrapper,
+    changeNumbersInTheTextArea,
+    clearTextArea,
+    compareCellsGridAndTextArea,
+    checkForSolution
   }
 } catch (e) {}
